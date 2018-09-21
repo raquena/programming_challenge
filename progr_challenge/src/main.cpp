@@ -13,6 +13,7 @@ const unsigned char  PIN_UP_OUT = D8;
 const unsigned char PIN_DOWN_OUT = D0;
 
 const unsigned char WINDOW_MS = 100;    // time in ms in which we can't make more pulses.
+const unsigned char PULSE_WIDTH = 50;   // so high-50ms-low-100m-wait
 
 // global variables mailbox //
 
@@ -24,6 +25,8 @@ static unsigned char rolledDown = 0;  // count the number of times there's a nee
 
 static unsigned long t0 = 0;    // starting time for ensuring 100ms have passed.
 unsigned long t = 0;            // current time
+
+static unsigned char ready = 0; // flag that determines if we're ready for the next pulse
 
 
 
@@ -66,29 +69,38 @@ void loop() {
     // blocking code, too easy, bad implementation for adding functionality.
     // conditional with time measuring.
 
-    if((t = millis()) > t0 + WINDOW_MS){  // if already more than 100ms since last time
+    if((t = millis()) > t0 + WINDOW_MS + PULSE_WIDTH){  // if already more than 100ms since last time
       t0 = millis();    // start measuring time again
+#ifdef DEBUG_SERIAL
+      Serial.print(t0);
+      Serial.print('\n');
+#endif
       rolledUp = rolledUp - 1; // decrease the pulse count.
       rolledDown = 0;   // NOT IN SPECIFICATION!!! for useability reasons, if we turn up, we clear going down.
     }
 
 
   }
-  if(rolledDown > 0){   // this should
-  #ifdef DEBUG_SERIAL
-    Serial.print("\nrolled down ");
-    Serial.print(rolledDown);
-    Serial.print("\n");
-  #endif
+  if(rolledDown > 0){   // number of recorder pulses from the roll.
 
-  if((t = millis()) > t0 + WINDOW_MS){  // if already more than 100ms since last time
-    t0 = millis();    // start measuring time again
-    rolledDown = rolledDown - 1; // decrease the pulse count.
-    rolledUp = 0;   // NOT IN SPECIFICATION!!! for useability reasons, if we turn up, we clear going down.
+    // 1. ARE WE HIGH OR LOW? (if high we go low after 50ms, if low, we go high after 100ms)
+
+    if((t = millis()) > t0 + WINDOW_MS + PULSE_WIDTH){  // if already more than 100ms since last PULSE END
+
+      #ifdef DEBUG_SERIAL
+        Serial.print("\nrolled down ");
+        Serial.print(rolledDown);
+        Serial.print("\n");
+        Serial.print(t0);
+        Serial.print('\n');
+      #endif
+      digitalWrite(PIN_DOWN_OUT, HIGH);     // we start the next pulse
+
+      t0 = millis();    // start measuring time again
+      rolledDown = rolledDown - 1; // decrease the pulse count.
+      rolledUp = 0;   // NOT IN SPECIFICATION!!! for useability reasons, if we turn down, we clear going up.
+    }
   }
-
-  }
-
 }
 
 
