@@ -26,7 +26,7 @@ static unsigned char rolledDown = 0;  // count the number of times there's a nee
 static unsigned long t0 = 0;    // starting time for ensuring 100ms have passed.
 unsigned long t = 0;            // current time
 
-static unsigned char ready = 0; // flag that determines if we're ready for the next pulse
+static unsigned char step = 0; // flag that determines in which step for the pulse generation or pause we are
 
 
 
@@ -81,11 +81,9 @@ void loop() {
 
 
   }
-  if(rolledDown > 0){   // number of recorder pulses from the roll.
+  if(rolledDown > 0){   // number of recorded pulses from the roll.
 
-    // 1. ARE WE HIGH OR LOW? (if high we go low after 50ms, if low, we go high after 100ms)
-
-    if((t = millis()) > t0 + WINDOW_MS + PULSE_WIDTH){  // if already more than 100ms since last PULSE END
+    if(step == 0){
 
       #ifdef DEBUG_SERIAL
         Serial.print("\nrolled down ");
@@ -94,11 +92,20 @@ void loop() {
         Serial.print(t0);
         Serial.print('\n');
       #endif
-      digitalWrite(PIN_DOWN_OUT, HIGH);     // we start the next pulse
 
-      t0 = millis();    // start measuring time again
-      rolledDown = rolledDown - 1; // decrease the pulse count.
-      rolledUp = 0;   // NOT IN SPECIFICATION!!! for useability reasons, if we turn down, we clear going up.
+      digitalWrite(PIN_DOWN_OUT,HIGH);    // we start the pulse
+      t0 = millis();                      // start counting time
+      step = 1;
+    }else if(step == 1){
+      if((t = millis()) > t0 + PULSE_WIDTH){
+        digitalWrite(PIN_DOWN_OUT,HIGH);  // finish pulse, start pause
+        step = 2;
+      }
+    }else if(step == 2){
+      if((t = millis()) > t0 + PULSE_WIDTH + WINDOW_MS){
+        step = 0;                           // finish pause
+        rolledDown = rolledDown - 1;
+      }
     }
   }
 }
