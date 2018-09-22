@@ -1,3 +1,5 @@
+// NOTE; Interrupt input pins need external pull down resistors.
+
 #include <Arduino.h>
 
 #include <ESP8266WiFi.h>
@@ -10,17 +12,15 @@ const unsigned char  PIN_UP_IN = D2;
 const unsigned char PIN_DOWN_IN = D1;
 
 const unsigned char  PIN_UP_OUT = D8;
-const unsigned char PIN_DOWN_OUT = D0;
+const unsigned char PIN_DOWN_OUT = D5;
 
 const unsigned char WINDOW_MS = 100;    // time in ms in which we can't make more pulses.
 const unsigned char PULSE_WIDTH = 50;   // so high-50ms-low-100m-wait
 
 // global variables mailbox //
 
-static unsigned char rolledUpHigh = 0;  // for debouncing pulses if needed
-static unsigned char rolledUpLow = 0;
 
-static unsigned char rolledUp = 0;    // flags of rolling to use in the main loop.
+static unsigned char rolledUp = 0;    // flags of rolling to use in the main loop.(more than 255 pulses necessary?)
 static unsigned char rolledDown = 0;  // count the number of times there's a need to roll down
 
 static unsigned long t0 = 0;    // starting time for ensuring 100ms have passed.
