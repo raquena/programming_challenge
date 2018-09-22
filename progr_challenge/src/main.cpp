@@ -6,7 +6,7 @@
 
 // pin definitions //
 
-const unsigned char  PIN_UP_IN = D3;
+const unsigned char  PIN_UP_IN = D2;
 const unsigned char PIN_DOWN_IN = D1;
 
 const unsigned char  PIN_UP_OUT = D8;
@@ -62,26 +62,37 @@ void setup() {
 
 void loop() {
 
-  if(rolledUp > 0){   // this should
-    Serial.print("rolled up\n");
+  if(rolledUp > 0){   // number of recorded pulses from the roll.
 
-    // ensure that no pulse is generated for 100ms, two options:
-    // blocking code, too easy, bad implementation for adding functionality.
-    // conditional with time measuring.
+    if(step == 0){
 
-    if((t = millis()) > t0 + WINDOW_MS + PULSE_WIDTH){  // if already more than 100ms since last time
-      t0 = millis();    // start measuring time again
-#ifdef DEBUG_SERIAL
-      Serial.print(t0);
-      Serial.print('\n');
-#endif
-      rolledUp = rolledUp - 1; // decrease the pulse count.
-      rolledDown = 0;   // NOT IN SPECIFICATION!!! for useability reasons, if we turn up, we clear going down.
+      #ifdef DEBUG_SERIAL
+        Serial.print("\nrolled Up ");
+        Serial.print(rolledUp);
+        Serial.print("\n");
+        Serial.print(t0);
+        Serial.print('\n');
+      #endif
+
+      digitalWrite(PIN_UP_OUT,HIGH);    // we start the pulse
+      t0 = millis();                      // start counting time
+      step = 1;
+    }else if(step == 1){
+      if((t = millis()) > t0 + PULSE_WIDTH){
+        digitalWrite(PIN_UP_OUT,HIGH);  // finish pulse, start pause
+        step = 2;
+      }
+    }else if(step == 2){
+      if((t = millis()) > t0 + PULSE_WIDTH + WINDOW_MS){
+        step = 0;                           // finish pause
+        rolledUp = rolledUp - 1;
+        rolledDown = 0; // NOT IN SPECIFICATION!!! for useability reasons, if we turn up, we clear going down
+      }
     }
-
-
   }
-  if(rolledDown > 0){   // number of recorded pulses from the roll.
+
+
+if(rolledDown > 0){   // number of recorded pulses from the roll.
 
     if(step == 0){
 
@@ -105,6 +116,7 @@ void loop() {
       if((t = millis()) > t0 + PULSE_WIDTH + WINDOW_MS){
         step = 0;                           // finish pause
         rolledDown = rolledDown - 1;
+        rolledUp = 0; // NOT IN SPECIFICATION!!! for useability reasons, if we turn up, we clear going down
       }
     }
   }
